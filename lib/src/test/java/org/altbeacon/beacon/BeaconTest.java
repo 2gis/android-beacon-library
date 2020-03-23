@@ -144,28 +144,28 @@ public class BeaconTest {
 
     @Test
     public void testCalculateAccuracyWithRssiEqualsPower() {
-        Beacon.setDistanceCalculator(new ModelSpecificDistanceCalculator(null, null));
+        Beacon.setDistanceCalculator(new ModelSpecificDistanceCalculator());
         double accuracy = Beacon.calculateDistance(-55, -55);
         assertEquals("Distance should be one meter if mRssi is the same as power", 1.0, accuracy, 0.1);
     }
 
     @Test
     public void testCalculateAccuracyWithRssiGreaterThanPower() {
-        Beacon.setDistanceCalculator(new ModelSpecificDistanceCalculator(null, null));
+        Beacon.setDistanceCalculator(new ModelSpecificDistanceCalculator());
         double accuracy = Beacon.calculateDistance(-55, -50);
         assertTrue("Distance should be under one meter if mRssi is less negative than power.  Accuracy was " + accuracy, accuracy < 1.0);
     }
 
     @Test
     public void testCalculateAccuracyWithRssiLessThanPower() {
-        Beacon.setDistanceCalculator(new ModelSpecificDistanceCalculator(null, null));
+        Beacon.setDistanceCalculator(new ModelSpecificDistanceCalculator());
         double accuracy = Beacon.calculateDistance(-55, -60);
         assertTrue("Distance should be over one meter if mRssi is less negative than power. Accuracy was "+accuracy,  accuracy > 1.0);
     }
 
     @Test
     public void testCalculateAccuracyWithRssiEqualsPowerOnInternalProperties() {
-        Beacon.setDistanceCalculator(new ModelSpecificDistanceCalculator(null, null));
+        Beacon.setDistanceCalculator(new ModelSpecificDistanceCalculator());
         Beacon beacon = new Beacon.Builder().setTxPower(-55).setRssi(-55).build();
         double distance = beacon.getDistance();
         assertEquals("Distance should be one meter if mRssi is the same as power", 1.0, distance, 0.1);

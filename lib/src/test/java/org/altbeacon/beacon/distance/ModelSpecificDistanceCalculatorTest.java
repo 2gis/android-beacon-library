@@ -30,7 +30,7 @@ public class ModelSpecificDistanceCalculatorTest {
     public void testCalculatesDistance() {
         org.robolectric.shadows.ShadowLog.stream = System.err;
 
-        ModelSpecificDistanceCalculator distanceCalculator = new ModelSpecificDistanceCalculator(null, null);
+        ModelSpecificDistanceCalculator distanceCalculator = new ModelSpecificDistanceCalculator();
         Double distance = distanceCalculator.calculateDistance(-59, -59);
         assertEquals("Distance should be 1.0 for same power and rssi", 1.0, distance, 0.1);
     }
@@ -39,7 +39,7 @@ public class ModelSpecificDistanceCalculatorTest {
     public void testSelectsDefaultModel() {
         org.robolectric.shadows.ShadowLog.stream = System.err;
 
-        ModelSpecificDistanceCalculator distanceCalculator = new ModelSpecificDistanceCalculator(null, null);
+        ModelSpecificDistanceCalculator distanceCalculator = new ModelSpecificDistanceCalculator();
         assertEquals("Default model should be Nexus 5", "Nexus 5", distanceCalculator.getModel().getModel());
     }
 
@@ -48,7 +48,7 @@ public class ModelSpecificDistanceCalculatorTest {
         org.robolectric.shadows.ShadowLog.stream = System.err;
         AndroidModel model = new AndroidModel("4.4.2", "KOT49H","Nexus 4","LGE");
 
-        ModelSpecificDistanceCalculator distanceCalculator = new ModelSpecificDistanceCalculator(null, null, model);
+        ModelSpecificDistanceCalculator distanceCalculator = new ModelSpecificDistanceCalculator(model);
         assertEquals("should be Nexus 4", "Nexus 4", distanceCalculator.getModel().getModel());
     }
 
@@ -58,7 +58,7 @@ public class ModelSpecificDistanceCalculatorTest {
 		org.robolectric.shadows.ShadowLog.stream = System.err;
 
 		final AndroidModel model = new AndroidModel("5.0.2", "LXG22.67-7.1", "Moto X Pro", "XT1115");
-		ModelSpecificDistanceCalculator distanceCalculator = new ModelSpecificDistanceCalculator(applicationContext, null, model);
+		ModelSpecificDistanceCalculator distanceCalculator = new ModelSpecificDistanceCalculator(model);
 		assertEquals("should be Moto X Pro", "Moto X Pro", distanceCalculator.getModel().getModel());
 		Double distance = distanceCalculator.calculateDistance(-49, -58);
 		assertEquals("Distance should be as predicted by coefficients at 3 meters", 2.661125466, distance, 0.1);
@@ -78,7 +78,7 @@ public class ModelSpecificDistanceCalculatorTest {
 				"\"coefficient3\": 0.54992,\"version\":\"4.4.2\",\"build_number\":\"LPV79\"," +
 				"\"model\":\"Nexus 5\",\"manufacturer\":\"LGE\",\"default\": true}]}";
 		final ModelSpecificDistanceCalculator distanceCalculator =
-				new ModelSpecificDistanceCalculator(applicationContext, null, model);
+				new ModelSpecificDistanceCalculator(model);
 
 		Runnable runnable2 = new Runnable() {
 			@Override

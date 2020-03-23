@@ -1,21 +1,11 @@
 package org.altbeacon.beacon.distance;
 
-import android.annotation.TargetApi;
-import android.content.Context;
-import android.content.pm.PackageManager;
-import android.os.AsyncTask;
-import android.os.Build;
-
 import org.altbeacon.beacon.logging.LogManager;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -52,26 +42,22 @@ public class ModelSpecificDistanceCalculator implements DistanceCalculator {
     private DistanceCalculator mDistanceCalculator;
     private AndroidModel mModel;
     private AndroidModel mRequestedModel;
-    private String mRemoteUpdateUrlString = null;
-    private Context mContext;
     private final ReentrantLock mLock = new ReentrantLock();
 
     /**
      * Obtains the best possible <code>DistanceCalculator</code> for the Android device calling
      * the constructor
      */
-    public ModelSpecificDistanceCalculator(Context context, String remoteUpdateUrlString) {
-        this(context, remoteUpdateUrlString, AndroidModel.forThisDevice());
+    public ModelSpecificDistanceCalculator() {
+        this(AndroidModel.forThisDevice());
     }
 
     /**
      * Obtains the best possible <code>DistanceCalculator</code> for the Android device passed
      * as an argument
      */
-    public ModelSpecificDistanceCalculator(Context context, String remoteUpdateUrlString, AndroidModel model) {
+    public ModelSpecificDistanceCalculator(AndroidModel model) {
         mRequestedModel = model;
-        mRemoteUpdateUrlString = remoteUpdateUrlString;
-        mContext = context;
         loadModelMap();
         mDistanceCalculator = findCalculatorForModelWithLock(model);
     }
@@ -140,124 +126,10 @@ public class ModelSpecificDistanceCalculator implements DistanceCalculator {
     }
 
     private void loadModelMap() {
-        boolean mapLoaded = false;
-        if (mRemoteUpdateUrlString != null) {
-            mapLoaded = loadModelMapFromFile();
-            // We only want to try to download an update from the server the first time the app is
-            // run.  If we successfully download an update it gets saved to a file, so if the file
-            // is present that means should not download again.
-            if (!mapLoaded) {
-                requestModelMapFromWeb();
-            }
-        }
-        if (!mapLoaded) {
-            loadDefaultModelMap();
-        }
+        loadDefaultModelMap();
         mDistanceCalculator = findCalculatorForModelWithLock(mRequestedModel);
     }
 
-    private boolean loadModelMapFromFile() {
-        File file = new File(mContext.getFilesDir(), CONFIG_FILE);
-        FileInputStream inputStream = null;
-        BufferedReader reader = null;
-        StringBuilder sb = new StringBuilder();
-        try {
-            inputStream = new FileInputStream(file);
-            reader = new BufferedReader(new InputStreamReader(inputStream));
-            String line;
-            while ((line = reader.readLine()) != null) {
-                sb.append(line).append("\n");
-            }
-        }
-        catch (FileNotFoundException fnfe){
-            //This occurs on the first time the app is run, no error message necessary.
-            return false;
-        }
-        catch (IOException e) {
-            LogManager.e(e, TAG, "Cannot open distance model file %s", file);
-            return false;
-        }
-        finally {
-            if (reader != null) {
-                try { reader.close(); } catch (Exception e2) {}
-            }
-            if (inputStream != null) {
-                try { inputStream.close(); } catch (Exception e2) {}
-            }
-        }
-        try {
-            buildModelMapWithLock(sb.toString());
-            return true;
-        } catch (JSONException e) {
-            LogManager.e(
-                    e,
-                    TAG,
-                    "Cannot update distance models from online database at %s with JSON: %s",
-                    mRemoteUpdateUrlString, sb.toString()
-            );
-            return false;
-        }
-    }
-
-    private boolean saveJson(String jsonString) {
-
-        FileOutputStream outputStream = null;
-
-        try {
-            outputStream = mContext.openFileOutput(CONFIG_FILE, Context.MODE_PRIVATE);
-            outputStream.write(jsonString.getBytes());
-            outputStream.close();
-        } catch (Exception e) {
-            LogManager.w(e, TAG, "Cannot write updated distance model to local storage");
-            return false;
-        }
-        finally {
-            try {
-                if (outputStream != null) outputStream.close();
-            }
-            catch (Exception e) {}
-        }
-        LogManager.i(TAG, "Successfully saved new distance model file");
-        return true;
-    }
-
-    @TargetApi(Build.VERSION_CODES.HONEYCOMB)
-    private void requestModelMapFromWeb() {
-
-        if (mContext.checkCallingOrSelfPermission("android.permission.INTERNET") != PackageManager.PERMISSION_GRANTED) {
-            LogManager.w(TAG, "App has no android.permission.INTERNET permission.  Cannot check for distance model updates");
-            return;
-        }
-
-        new ModelSpecificDistanceUpdater(mContext, mRemoteUpdateUrlString,
-                new ModelSpecificDistanceUpdater.CompletionHandler() {
-            @Override
-            public void onComplete(String body, Exception ex, int code) {
-                if (ex != null) {
-                    LogManager.w(TAG, "Cannot updated distance models from online database at %s",
-                            ex, mRemoteUpdateUrlString);
-                }
-                else if (code != 200) {
-                    LogManager.w(TAG, "Cannot updated distance models from online database at %s "
-                            + "due to HTTP status code %s", mRemoteUpdateUrlString, code);
-                }
-                else {
-                    LogManager.d(TAG,
-                            "Successfully downloaded distance models from online database");
-                    try {
-                        buildModelMapWithLock(body);
-                        if (saveJson(body)) {
-                            loadModelMapFromFile();
-                            mDistanceCalculator = findCalculatorForModelWithLock(mRequestedModel);
-                            LogManager.i(TAG, "Successfully updated distance model with latest from online database");
-                        }
-                    } catch (JSONException e) {
-                        LogManager.w(e, TAG, "Cannot parse json from downloaded distance model");
-                    }
-                }
-            }
-        }).executeOnExecutor(AsyncTask.THREAD_POOL_EXECUTOR);
-    }
 
     void buildModelMapWithLock(String jsonString) throws JSONException {
         mLock.lock();
