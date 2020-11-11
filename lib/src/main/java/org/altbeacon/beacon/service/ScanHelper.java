@@ -352,6 +352,7 @@ class ScanHelper {
                     RangeState rangeState = mRangedRegionState.get(region);
                     if (rangeState != null) {
                         rangeState.addBeacon(beacon);
+                        rangeState.getCallback().call(mContext, "rangingData", new RangingData(rangeState.finalizeBeacons(), region).toBundle());
                     }
                 }
             }
